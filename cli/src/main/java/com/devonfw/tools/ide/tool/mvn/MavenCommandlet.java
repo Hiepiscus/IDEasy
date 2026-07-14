@@ -26,7 +26,7 @@ public abstract class MavenCommandlet extends LocalToolCommandlet {
 
     super(context, tool, Set.of(Tag.JAVA, Tag.BUILD));
   }
-
+  
   /**
    * Initializes common Maven auto-completion candidates.
    *
