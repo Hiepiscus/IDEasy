@@ -71,9 +71,6 @@ public abstract class MavenCommandlet extends LocalToolCommandlet {
     registry.add("-DdeployAtEnd=true");
     registry.add("-Dmaven.multiModuleProjectDirectory=");
     registry.add("-Dmaven.repo.local=");
-    registry.add("-Dmvnd.socketConnectTimeout=");
-    registry.add("-Dmvnd.socketFamily=");
-    registry.add("-Dmvnd.threadStackSize=");
     registry.add("-T", "--threads");
     registry.add("-Dstyle.color=");
     registry.add("-Duser.dir=");
