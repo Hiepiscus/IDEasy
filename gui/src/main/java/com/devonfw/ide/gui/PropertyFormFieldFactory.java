@@ -1,5 +1,7 @@
 package com.devonfw.ide.gui;
 
+import java.io.File;
+import java.nio.file.Path;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -107,11 +109,11 @@ public class PropertyFormFieldFactory {
 
       String selected;
       if (pathProperty instanceof FolderProperty) {
-        selected = selectDirectory(currentStage);
+        selected = selectDirectory(currentStage, textField.getText(), context.getCwd());
       } else if (pathProperty instanceof FileProperty) {
-        selected = selectFile(currentStage);
+        selected = selectFile(currentStage, textField.getText(), context.getCwd());
       } else {
-        selected = selectDirectory(currentStage);
+        selected = selectDirectory(currentStage, textField.getText(), context.getCwd());
       }
 
       if (selected != null) {
@@ -126,17 +128,62 @@ public class PropertyFormFieldFactory {
     return hbox;
   }
 
-  private static String selectFile(Stage stage) {
+  private static String selectFile(Stage stage, String currentPath, Path projectPath) {
     FileChooser fileChooser = new FileChooser();
     fileChooser.setTitle("Select File");
-    java.io.File result = fileChooser.showOpenDialog(stage);
+
+    File initialDir = null;
+
+    if (currentPath != null && !currentPath.isBlank()) {
+      File currentFile = new File(currentPath);
+      File parent = currentFile.getParentFile();
+      if (currentFile.isDirectory()) {
+        initialDir = currentFile;
+      } else if (currentFile.isFile() && currentFile.getParentFile() != null) {
+        initialDir = currentFile.getParentFile();
+      }
+    }
+
+    if (initialDir == null && projectPath != null) {
+      File projectDir = projectPath.toFile();
+      if (projectDir.isDirectory()) {
+        initialDir = projectDir;
+      }
+    }
+
+    if (initialDir != null) {
+      fileChooser.setInitialDirectory(initialDir);
+    }
+
+    File result = fileChooser.showOpenDialog(stage);
     return result != null ? result.getAbsolutePath() : null;
   }
 
-  private static String selectDirectory(Stage stage) {
+  private static String selectDirectory(Stage stage, String currentPath, Path projectPath) {
     DirectoryChooser directoryChooser = new DirectoryChooser();
     directoryChooser.setTitle("Select Folder");
-    java.io.File result = directoryChooser.showDialog(stage);
+
+    File initialDir = null;
+
+    if (currentPath != null && !currentPath.isBlank()) {
+      File currentDir = new File(currentPath);
+      if (currentDir.isDirectory()) {
+        initialDir = currentDir;
+      }
+    }
+
+    if (initialDir == null && projectPath != null) {
+      File projectDir = projectPath.toFile();
+      if (projectDir.isDirectory()) {
+        initialDir = projectDir;
+      }
+    }
+
+    if (initialDir != null) {
+      directoryChooser.setInitialDirectory(initialDir);
+    }
+
+    File result = directoryChooser.showDialog(stage);
     return result != null ? result.getAbsolutePath() : null;
   }
 
