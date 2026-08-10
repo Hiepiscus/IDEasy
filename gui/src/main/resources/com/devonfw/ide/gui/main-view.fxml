@@ -94,6 +94,7 @@
       </VBox>
     </VBox>
   </left>
+
   <center>
     <StackPane fx:id="centerPane" prefHeight="150.0" BorderPane.alignment="CENTER">
       <fx:define>
