@@ -256,6 +256,7 @@ public class MainController {
       eclipseOpen.setDisable(false);
       intellijOpen.setDisable(false);
       vsCodeOpen.setDisable(false);
+      commandletOpen.setDisable(false);
     });
   }
 
