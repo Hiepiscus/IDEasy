@@ -2,6 +2,7 @@ package com.devonfw.ide.gui;
 
 import java.io.File;
 import java.nio.file.Path;
+
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;

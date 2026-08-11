@@ -3,7 +3,6 @@ package com.devonfw.tools.ide.tool.mvn;
 
 import java.util.Set;
 
-
 import com.devonfw.tools.ide.common.Tag;
 import com.devonfw.tools.ide.completion.AutoCompletionRegistry;
 import com.devonfw.tools.ide.context.IdeContext;
@@ -26,7 +25,7 @@ public abstract class MavenCommandlet extends LocalToolCommandlet {
 
     super(context, tool, Set.of(Tag.JAVA, Tag.BUILD));
   }
-  
+
   /**
    * Initializes common Maven auto-completion candidates.
    *
@@ -77,5 +76,3 @@ public abstract class MavenCommandlet extends LocalToolCommandlet {
     registry.add("-Duser.home=");
   }
 }
-
-
