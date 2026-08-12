@@ -1,5 +1,6 @@
 package com.devonfw.tools.ide.commandlet;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -268,5 +269,9 @@ public abstract class Commandlet {
    */
   public ToolCommandlet getToolForCompletion() {
     return null;
+  }
+
+  public boolean isValidExecutionDirectory(Path directory) {
+    return true;
   }
 }

@@ -621,6 +621,11 @@ public abstract class LocalToolCommandlet extends ToolCommandlet {
     return null;
   }
 
+  @Override
+  public boolean isValidExecutionDirectory(Path directory) {
+    return findBuildDescriptor(directory) != null;
+  }
+
   /**
    * @return Bash completion command for this tool or {@code null} if this tool does not provide Bash completion.
    */
