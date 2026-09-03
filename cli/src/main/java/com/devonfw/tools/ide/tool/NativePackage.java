@@ -31,7 +31,7 @@ public class NativePackage {
     this.extraInstallOptions = extraInstallOptions != null ? List.copyOf(extraInstallOptions) : List.of();
     this.setupCommands = setupCommands != null ? List.copyOf(setupCommands) : List.of();
     this.cleanupCommands = cleanupCommands != null ? List.copyOf(cleanupCommands) : List.of();
-    this.optionalNativePackageArtifactPaths = optionalNativePackageArtifactPaths != null ? List.copyOf(cleanupCommands) : List.of();
+    this.optionalNativePackageArtifactPaths = optionalNativePackageArtifactPaths != null ? List.copyOf(optionalNativePackageArtifactPaths) : List.of();
   }
 
   /**
