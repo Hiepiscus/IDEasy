@@ -23,6 +23,7 @@ public class NativePackage {
    * @param extraInstallOptions extra install options (optional)
    * @param setupCommands commands to run before install (optional)
    * @param cleanupCommands commands to run after uninstall (optional)
+   * @param optionalNativePackageArtifactPaths paths to local package artifacts (optional)
    */
   public NativePackage(NativePackageManager pm, List<String> packages,
       List<String> extraInstallOptions, List<String> setupCommands, List<String> cleanupCommands, List<String> optionalNativePackageArtifactPaths) {
