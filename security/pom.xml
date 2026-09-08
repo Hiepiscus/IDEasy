@@ -9,6 +9,7 @@
     <version>dev-SNAPSHOT</version>
   </parent>
 
+  <groupId>com.devonfw.tools.IDEasy</groupId>
   <artifactId>ide-security</artifactId>
   <version>${revision}</version>
   <name>${project.artifactId}</name>

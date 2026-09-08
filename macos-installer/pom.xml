@@ -15,6 +15,7 @@
     <version>dev-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <groupId>com.devonfw.tools.IDEasy</groupId>
 
   <build>
     <plugins>
