@@ -7,7 +7,6 @@
     <artifactId>ide</artifactId>
     <version>dev-SNAPSHOT</version>
   </parent>
-  <groupId>com.devonfw.tools.IDEasy</groupId>
   <artifactId>ide-cli</artifactId>
   <version>${revision}</version>
   <name>${project.artifactId}</name>

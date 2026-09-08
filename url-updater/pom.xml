@@ -9,7 +9,6 @@
     <version>dev-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <groupId>com.devonfw.tools.IDEasy</groupId>
   <artifactId>url-updater</artifactId>
   <version>${revision}</version>
   <name>${project.artifactId}</name>
