@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -346,14 +347,36 @@ public class FileAccessImpl extends HttpDownloader implements FileAccess {
     LOG.trace("Moving {} to {}", source, targetDir);
     try {
       Files.move(source, targetDir, copyOptions);
-    } catch (IOException e) {
-      String fileType = Files.isSymbolicLink(source) ? "symlink" : isJunction(source) ? "junction" : Files.isDirectory(source) ? "directory" : "file";
-      String message = "Failed to move " + fileType + ": " + source + " to " + targetDir + ".";
-      if (this.context.getSystemInfo().isWindows()) {
-        message = message + "\n" + WINDOWS_FILE_LOCK_WARNING;
+    } catch (FileAlreadyExistsException e) {
+      // A target that was supposed to be removed before the move (e.g. the installation directory of a tool that is
+      // being re-installed) can still exist because the previous delete has not fully completed, typically due to file
+      // locks on Windows. Delete the stale leftover and retry before giving up.
+      if (Files.exists(targetDir, LinkOption.NOFOLLOW_LINKS)) {
+        LOG.warn(
+            "Move {} to {} failed as the target still exists - it is likely left over from a not fully completed delete, so we delete it and retry once.",
+            source, targetDir);
+        delete(targetDir);
+        try {
+          Files.move(source, targetDir, copyOptions);
+        } catch (IOException retryError) {
+          throw new IllegalStateException(createMoveErrorMessage(source, targetDir), retryError);
+        }
+      } else {
+        throw new IllegalStateException(createMoveErrorMessage(source, targetDir), e);
       }
-      throw new IllegalStateException(message, e);
+    } catch (IOException e) {
+      throw new IllegalStateException(createMoveErrorMessage(source, targetDir), e);
     }
+  }
+
+  private String createMoveErrorMessage(Path source, Path targetDir) {
+
+    String fileType = Files.isSymbolicLink(source) ? "symlink" : isJunction(source) ? "junction" : Files.isDirectory(source) ? "directory" : "file";
+    String message = "Failed to move " + fileType + ": " + source + " to " + targetDir + ".";
+    if (this.context.getSystemInfo().isWindows()) {
+      message = message + "\n" + WINDOWS_FILE_LOCK_WARNING;
+    }
+    return message;
   }
 
   @Override
@@ -542,16 +565,16 @@ public class FileAccessImpl extends HttpDownloader implements FileAccess {
       if (SystemInfoImpl.INSTANCE.isWindows()) {
         if (Files.isDirectory(absoluteSource)) {
           LOG.warn(
-            "Due to lack of permissions, Microsoft's mklink with junction has to be used to create the link. "
-              + "See https://github.com/devonfw/IDEasy/blob/main/documentation/symlink.adoc for further details. "
-              + "Error was: " + e.getMessage());
+              "Due to lack of permissions, Microsoft's mklink with junction has to be used to create the link. "
+                  + "See https://github.com/devonfw/IDEasy/blob/main/documentation/symlink.adoc for further details. "
+                  + "Error was: " + e.getMessage());
           mklinkOnWindows(finalSource, absoluteSource, absoluteLink, relative);
           LOG.debug("Created junction with mklink as fallback for link to directory.");
         } else {
           LOG.warn(
-            "Due to lack of permissions, a hard link has to be used instead of a symbolic link. "
-              + "See https://github.com/devonfw/IDEasy/blob/main/documentation/symlink.adoc for further details. "
-              + "Error was: " + e.getMessage());
+              "Due to lack of permissions, a hard link has to be used instead of a symbolic link. "
+                  + "See https://github.com/devonfw/IDEasy/blob/main/documentation/symlink.adoc for further details. "
+                  + "Error was: " + e.getMessage());
           createHardLink(absoluteSource, link);
           resultingPathLinkType = PathLinkType.HARD_LINK;
           LOG.debug("Created hard link as fallback for link to file.");
@@ -1054,7 +1077,7 @@ public class FileAccessImpl extends HttpDownloader implements FileAccess {
     byte[] buffer = new byte[8192];
     Path root = targetDir.toAbsolutePath().normalize();
     try (SevenZFile sevenZFile = SevenZFile.builder().setPath(file).get();
-      IdeProgressBar pb = this.context.newProgressbarForExtracting(getFileSize(file))) {
+        IdeProgressBar pb = this.context.newProgressbarForExtracting(getFileSize(file))) {
       SevenZArchiveEntry entry;
       while ((entry = sevenZFile.getNextEntry()) != null) {
         Path entryPath = resolveRelativePathSecure(entry.getName(), root);
@@ -1258,6 +1281,9 @@ public class FileAccessImpl extends HttpDownloader implements FileAccess {
     } catch (IOException e) {
       throw new IllegalStateException("Failed to delete " + path, e);
     }
+    if (this.context.getSystemInfo().isWindows()) {
+      waitUntilReallyDeleted(path);
+    }
   }
 
   private void deleteRecursive(Path path) throws IOException {
@@ -1292,6 +1318,31 @@ public class FileAccessImpl extends HttpDownloader implements FileAccess {
       LOG.debug("Couldn't give write access to file: {}", path);
     }
     Files.delete(path);
+  }
+
+  /**
+   * On Windows a successful {@link java.nio.file.Files#delete(Path)} call may still report the {@link Path} as existing for a short while because the
+   * deletion is not atomic and file locks (e.g. of the antivirus or an open process) can delay it. This method polls for a short while until the path is
+   * really gone so that a following {@link #move(Path, Path, StandardCopyOption...)} operation does not fail with a {@code FileAlreadyExistsException}.
+   * If the path still exists after the deadline it is left as is - the caller (e.g. {@link #move}) will handle the leftover itself.
+   *
+   * @param path the {@link Path} that was just deleted.
+   */
+  private void waitUntilReallyDeleted(Path path) {
+
+    long deadline = System.nanoTime() + Duration.ofSeconds(3).toNanos();
+    while (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
+      if (System.nanoTime() > deadline) {
+        LOG.warn("Path {} still reported as existing after delete - possible file lock.", path);
+        break;
+      }
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
   }
 
   @Override
