@@ -203,8 +203,7 @@ class FileAccessImplTest extends AbstractIdeContextTest {
   }
 
   /**
-   * Test of {@link FileAccessImpl#symlink(Path, Path, boolean)} and whether the source paths are simplified correctly by
-   * lexical normalization.
+   * Test of {@link FileAccessImpl#symlink(Path, Path, boolean)} and whether the source paths are simplified correctly by lexical normalization.
    */
   @Test
   void testSymlinkShortcutPaths(@TempDir Path tempDir) {
@@ -642,8 +641,8 @@ class FileAccessImplTest extends AbstractIdeContextTest {
   }
 
   /**
-   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a symlink entry that appears before its target in the ZIP.
-   * Specifically validates the two-phase extraction: symlinks are collected first and created only after all regular files are written.
+   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a symlink entry that appears before its target in the ZIP. Specifically validates the two-phase
+   * extraction: symlinks are collected first and created only after all regular files are written.
    */
   @Test
   void testUnzipWithSymbolicLinkBeforeTarget(@TempDir Path tempDir) {
@@ -663,8 +662,8 @@ class FileAccessImplTest extends AbstractIdeContextTest {
   }
 
   /**
-   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a ZIP that carries no Unix attributes (as produced by Windows tools).
-   * Verifies that extraction succeeds without exceptions and files are written with correct content.
+   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a ZIP that carries no Unix attributes (as produced by Windows tools). Verifies that extraction
+   * succeeds without exceptions and files are written with correct content.
    */
   @Test
   void testUnzipWithoutUnixAttributes(@TempDir Path tempDir) {
@@ -681,8 +680,8 @@ class FileAccessImplTest extends AbstractIdeContextTest {
   }
 
   /**
-   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a ZIP containing both an executable file and a symlink pointing to it.
-   * Verifies that file permissions and symlink resolution work correctly together.
+   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a ZIP containing both an executable file and a symlink pointing to it. Verifies that file
+   * permissions and symlink resolution work correctly together.
    */
   @Test
   void testUnzipWithSymbolicLinkToExecutable(@TempDir Path tempDir) {
@@ -747,9 +746,8 @@ class FileAccessImplTest extends AbstractIdeContextTest {
   }
 
   /**
-   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a simulated Mac OS.
-   * Verifies that file permissions are applied on macOS (same non-Windows code path as Linux).
-   * Disabled on actual Windows because {@link java.nio.file.Files#getPosixFilePermissions} is unavailable there.
+   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a simulated Mac OS. Verifies that file permissions are applied on macOS (same non-Windows code
+   * path as Linux). Disabled on actual Windows because {@link java.nio.file.Files#getPosixFilePermissions} is unavailable there.
    */
   @Test
   @DisabledOnOs(OS.WINDOWS)
@@ -769,13 +767,12 @@ class FileAccessImplTest extends AbstractIdeContextTest {
   }
 
   /**
-   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a simulated Windows OS.
-   * Verifies that the {@code isWindows()} guard in onFileCopiedFromZip suppresses the POSIX
-   * permission call, so the executable bit stored in the ZIP is NOT applied to the extracted file.
+   * Test of {@link FileAccessImpl#extractZip(Path, Path)} with a simulated Windows OS. Verifies that the {@code isWindows()} guard in onFileCopiedFromZip
+   * suppresses the POSIX permission call, so the executable bit stored in the ZIP is NOT applied to the extracted file.
    * <p>
-   * This test intentionally runs only on Linux/Mac: the whole point is to verify the guard from a machine where POSIX
-   * permissions are observable via {@link java.nio.file.Files#getPosixFilePermissions}. On actual Windows that API is
-   * unavailable and the guard is trivially always active, so there is nothing meaningful to assert.
+   * This test intentionally runs only on Linux/Mac: the whole point is to verify the guard from a machine where POSIX permissions are observable via
+   * {@link java.nio.file.Files#getPosixFilePermissions}. On actual Windows that API is unavailable and the guard is trivially always active, so there is
+   * nothing meaningful to assert.
    */
   @Test
   @DisabledOnOs(OS.WINDOWS)
@@ -890,7 +887,7 @@ class FileAccessImplTest extends AbstractIdeContextTest {
     // act
     context.getFileAccess()
         .extract7z(Path.of("src/test/resources/com/devonfw/tools/ide/io/executable_and_non_executable.7z"),
-          tempDir);
+            tempDir);
 
     // assert
     assertThat(tempDir.resolve("executableFile.txt")).exists();
@@ -1283,4 +1280,22 @@ class FileAccessImplTest extends AbstractIdeContextTest {
     assertThat(count).isEqualTo(Path.of("").toAbsolutePath().getNameCount() + 2);
   }
 
+  @Test
+  void testMoveReplacesLeftoverTargetDirectory(@TempDir Path tempDir) {
+    IdeTestContext context = new IdeTestContext();
+    FileAccess fileAccess = new FileAccessImpl(context);
+    Path source = tempDir.resolve("source");
+    fileAccess.mkdirs(source);
+    fileAccess.writeFileContent("content", source.resolve("payload.txt"));
+    Path target = tempDir.resolve("target");
+    fileAccess.mkdirs(target);
+    fileAccess.writeFileContent("stale", target.resolve("stale.txt"));
+
+    fileAccess.move(source, target);
+
+    assertThat(source).doesNotExist();
+    assertThat(target).exists().isDirectory();
+    assertThat(target.resolve("payload.txt")).exists().hasContent("content");
+    assertThat(target.resolve("stale.txt")).doesNotExist();
+  }
 }
