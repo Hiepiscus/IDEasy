@@ -1,7 +1,6 @@
 package com.devonfw.tools.ide.tool.mvn;
 
 
-import java.util.List;
 import java.util.Set;
 
 import com.devonfw.tools.ide.common.Tag;
@@ -72,12 +71,8 @@ public abstract class MavenCommandlet extends LocalToolCommandlet {
     registry.add("-Dstyle.color=");
     registry.add("-Duser.dir=");
     registry.add("-Duser.home=");
-    registry.add("exec:java");
-    registry.add("exec:exec");
-    registry.addAlternative("exec:java", "exec:exec");
-    registry.add("-Dexec.mainClass=");
-    registry.addDependency("-Dexec.mainClass=", List.of("exec:java"));
-    registry.add("-Dexec.args=");
-    registry.addDependency("-Dexec.args=", List.of("exec:java", "exec:exec"));
+    registry.add("exec:java", "exec:exec");
+    registry.add("-Dexec.mainClass=").addDependency("-Dexec.mainClass=", "exec:java");
+    registry.add("-Dexec.args=").addDependency("-Dexec.args=", "exec:java", "exec:exec");
   }
 }
