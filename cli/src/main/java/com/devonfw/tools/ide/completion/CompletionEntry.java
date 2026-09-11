@@ -8,8 +8,8 @@ import com.devonfw.tools.ide.commandlet.Commandlet;
 import com.devonfw.tools.ide.property.Property;
 
 /**
- * A completion candidate with optional alternatives and dependencies. The candidate and all of its alternatives represent completion options.
- * Therefore, this entry is not suggested if the candidate or any of its alternatives has already been provided.
+ * A completion candidate with optional alternatives and dependencies. The candidate and all of its alternatives represent completion options. Therefore, this
+ * entry is not suggested if the candidate or any of its alternatives has already been provided.
  */
 public class CompletionEntry {
 
@@ -41,7 +41,7 @@ public class CompletionEntry {
   }
 
   /**
-   * Performs auto-completion for this entry, skipping it entirely if the candidate or any of its synonyms has already been provided on the command line.
+   * Performs auto-completion for this entry, skipping it entirely if the candidate or any of its alternatives has already been provided on the command line.
    *
    * @param arg the current argument being completed.
    * @param collector the {@link CompletionCandidateCollector} to add the candidates to.
