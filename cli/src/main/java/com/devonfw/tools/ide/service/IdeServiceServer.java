@@ -26,6 +26,7 @@ public class IdeServiceServer {
   public static final String PORT_FILE_NAME = "service.port";
 
   private final UrlMetadata urlMetadata;
+  private final Object urlMetaDataLock = new Object();
   private ServerSocket serverSocket;
 
   public IdeServiceServer(IdeContext context) {
@@ -36,15 +37,17 @@ public class IdeServiceServer {
 
   public ServiceResponse handle(ServiceRequest request) {
 
-    try {
-      switch (request.operation()) {
-        case GET_VERSION:
-          return handleGetVersion(request);
-        default:
-          return ServiceResponse.error("Unsupported operation " + request.operation());
+    synchronized (this.urlMetaDataLock) {
+      try {
+        switch (request.operation()) {
+          case GET_VERSION:
+            return handleGetVersion(request);
+          default:
+            return ServiceResponse.error("Unsupported operation " + request.operation());
+        }
+      } catch (Exception e) { // CliException, unknown tool, no matching version, ...
+        return ServiceResponse.error(e.getMessage());
       }
-    } catch (Exception e) { // CliException, unknown tool, no matching version, ...
-      return ServiceResponse.error(e.getMessage());
     }
   }
 
@@ -54,6 +57,9 @@ public class IdeServiceServer {
       return ServiceResponse.error("Missing required parameter 'tool'.");
     }
     String edition = request.getParam("edition");
+    if (edition == null || edition.isBlank()) {
+      edition = tool;
+    }
     String versionPattern = request.getParam("version");
     VersionIdentifier resolved = this.urlMetadata.resolveVersion(
         tool,
@@ -69,14 +75,23 @@ public class IdeServiceServer {
     this.serverSocket = new ServerSocket(0);
     int port = this.serverSocket.getLocalPort();
     Files.writeString(portFile, Integer.toString(port), StandardCharsets.US_ASCII);
-    Thread acceptLoop = Thread.ofVirtual().name("ide-service-server").start(() -> serve());
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      stop();
+      try {
+        Files.deleteIfExists(portFile);
+      } catch (IOException e) {
+        LOG.debug("Could not delete port file {}: {}", portFile, e.getMessage());
+      }
+    }));
+    Thread.ofVirtual().name("ide-service-server").start(this::serve);
     return port;
   }
 
   private void serve() {
     while (!this.serverSocket.isClosed()) {
-      try (Socket socket = this.serverSocket.accept()) {
-        Thread worker = Thread.ofVirtual().name("ide-service-client-handler").start(() -> handleConnection(socket));
+      try {
+        Socket socket = this.serverSocket.accept();
+        Thread.ofVirtual().name("ide-service-client-handler").start(() -> handleConnection(socket));
       } catch (IOException e) {
         if (!this.serverSocket.isClosed()) {
           LOG.debug("Client connection handling aborted: {}", e.getMessage());
@@ -86,8 +101,9 @@ public class IdeServiceServer {
   }
 
   private void handleConnection(Socket socket) {
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(),
-        StandardCharsets.UTF_8));
+    try (socket;
+        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(),
+            StandardCharsets.UTF_8));
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),
             StandardCharsets.UTF_8))) {
       while (!socket.isClosed()) {
