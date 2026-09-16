@@ -11,6 +11,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.devonfw.tools.ide.cli.CliException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +32,10 @@ public class IdeServiceServer {
   private ServerSocket serverSocket;
 
   public IdeServiceServer(IdeContext context) {
+
+    if(context.getUrlsPath() == null){
+      throw new CliException("cannot load URL metadata");
+    }
 
     UrlRepository repository = UrlRepository.load(context.getUrlsPath());
     this.urlMetadata = new UrlMetadata(context, repository);

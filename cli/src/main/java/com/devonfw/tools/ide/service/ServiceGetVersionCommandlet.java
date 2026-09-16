@@ -39,6 +39,18 @@ public class ServiceGetVersionCommandlet extends Commandlet {
     return "service-get-version";
   }
 
+  public ToolProperty getTool() {
+    return this.tool;
+  }
+
+  public StringProperty getEdition() {
+    return this.edition;
+  }
+
+  public StringProperty getVersion() {
+    return this.version;
+  }
+
   @Override
   public boolean isProcessableOutput() {
     return true;
@@ -65,8 +77,12 @@ public class ServiceGetVersionCommandlet extends Commandlet {
   private String resolveLocally() {
     UrlRepository repository = UrlRepository.load(this.context.getUrlsPath());
     UrlMetadata urls = new UrlMetadata(this.context, repository);
+    String edition = this.edition.getValue();
+    if (edition == null || edition.isBlank()) {
+      edition = this.tool.getValue().getName();
+    }
     VersionIdentifier range = this.version.getValue() == null ? null : VersionIdentifier.of(this.version.getValue());
-    return urls.resolveVersion(this.tool.getValue().getName(), this.edition.getValue(), range, null).toString();
+    return urls.resolveVersion(this.tool.getValue().getName(), edition, range, null).toString();
   }
 
   private Map<String, String> buildParams() {
