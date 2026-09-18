@@ -46,6 +46,8 @@ public class IdeServiceClient {
       }
       return Optional.of(response);
     } catch (IOException e) {
+      System.err.println("DEBUG-CLIENT-EXC port=" + port);
+      e.printStackTrace(System.err);
       LOG.debug("No IDEasy service reachable at {}: {}", this.portFile, e.getMessage());
       return Optional.empty();
     }

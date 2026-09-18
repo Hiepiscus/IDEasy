@@ -49,7 +49,9 @@ class ServiceGetVersionCommandletTest extends AbstractIdeContextTest {
     return context;
   }
 
-  /** Helper to start a server on a random port with the given context and write the port file. */
+  /**
+   * Helper to start a server on a random port with the given context and write the port file.
+   */
   private void startServer(IdeTestContext ctx) throws IOException {
     this.server = new IdeServiceServer(ctx);
     Path portFile = ctx.getIdePath().resolve(IdeServiceClient.PORT_FILE_NAME);
@@ -65,8 +67,7 @@ class ServiceGetVersionCommandletTest extends AbstractIdeContextTest {
 
     // arrange
     this.context = newContext(PROJECT_BASIC);
-    ServiceGetVersionCommandlet cmd =
-        this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
+    ServiceGetVersionCommandlet cmd = this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
     cmd.getTool().setValueAsString("java", this.context);
     // act
     cmd.run();
@@ -75,32 +76,34 @@ class ServiceGetVersionCommandletTest extends AbstractIdeContextTest {
     assertThat(this.context).log(IdeLogLevel.PROCESSABLE).hasMessage("21.0.8_9");
   }
 
-  /** Test that the commandlet delegates to a running service and does not resolve locally. */
+  /**
+   * Test that the commandlet delegates to a running service and does not resolve locally.
+   */
   @Test
   void testServiceGetVersionDelegatesToRunningService() throws IOException {
 
     // arrange
     this.context = newContext(PROJECT_BASIC);
     startServer(this.context);
-    ServiceGetVersionCommandlet cmd =
-        this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
+    ServiceGetVersionCommandlet cmd = this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
     cmd.getTool().setValueAsString("java", this.context);
     // act
     cmd.run();
     // assert: the local-fallback message must NOT be present
-    assertThat(this.context).log().hasNoMessageContaining("IDEasy service not running");
+    assertThat(this.context).log().hasNoMessageContaining("IDEasy service not running - resolving version locally.");
     assertThat(this.context).log(IdeLogLevel.PROCESSABLE).hasMessage("21.0.8_9");
   }
 
-  /** Test that a version pattern is resolved via the service. */
+  /**
+   * Test that a version pattern is resolved via the service.
+   */
   @Test
   void testServiceGetVersionWithVersionPatternViaService() throws IOException {
 
     // arrange
     this.context = newContext(PROJECT_BASIC);
     startServer(this.context);
-    ServiceGetVersionCommandlet cmd =
-        this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
+    ServiceGetVersionCommandlet cmd = this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
     cmd.getTool().setValueAsString("java", this.context);
     cmd.getVersion().setValue("17.*");
     // act
@@ -110,16 +113,15 @@ class ServiceGetVersionCommandletTest extends AbstractIdeContextTest {
   }
 
   /**
-   * Test that an unknown tool returns the server's error as a CliException (not a silent local fallback).
+   * Test that an edition without any version return the server's error as a CliException, without silently falling back to local resolution.
    */
   @Test
-  void testServiceGetVersionUnknownToolReturnsServerErrors() throws IOException {
+  void testServiceGetVersionUnknownEditionReturnsServerError() throws IOException {
 
     // arrange
     this.context = newContext(PROJECT_BASIC);
     startServer(this.context);
-    ServiceGetVersionCommandlet cmd =
-        this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
+    ServiceGetVersionCommandlet cmd = this.context.getCommandletManager().getCommandlet(ServiceGetVersionCommandlet.class);
     cmd.getTool().setValueAsString("java", this.context);
     // note: "java" is a valid tool commandlet, but has no matching edition in the test urls
     // so we test via the server error path with an edition that does not exist
@@ -128,7 +130,8 @@ class ServiceGetVersionCommandletTest extends AbstractIdeContextTest {
     CliException exception = catchThrowableOfType(cmd::run, CliException.class);
     // assert
     assertThat(exception).isNotNull();
-    assertThat(exception.getMessage()).contains("nonexistent-edition");
+    assertThat(exception.getMessage()).contains("Could not find any version matching");
+    assertThat(this.context).log().hasNoMessageContaining("IDEasy service not running - resolving version locally.");
   }
 
   /**
@@ -161,8 +164,7 @@ class ServiceGetVersionCommandletTest extends AbstractIdeContextTest {
     startServer(this.context);
     Path portFile = this.context.getIdePath().resolve(IdeServiceClient.PORT_FILE_NAME);
     IdeServiceClient client = new IdeServiceClient(portFile);
-    ServiceRequest request = new ServiceRequest(ServiceOperation.GET_VERSION, Map.of("tool",
-        "java"));
+    ServiceRequest request = new ServiceRequest(ServiceOperation.GET_VERSION, Map.of("tool", "java"));
     int clients = 10;
     ExecutorService pool = Executors.newFixedThreadPool(clients);
     List<Future<Optional<ServiceResponse>>> futures = new ArrayList<>();

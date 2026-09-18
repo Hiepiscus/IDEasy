@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public final class IdeServiceProtocol {
@@ -16,7 +15,8 @@ public final class IdeServiceProtocol {
 
   public static void writeRequest(Writer writer, ServiceRequest request) throws IOException {
 
-    MAPPER.writeValue(writer, request);
+    String line = MAPPER.writeValueAsString(request);
+    writer.write(line);
     writer.write('\n');
     writer.flush();
   }
