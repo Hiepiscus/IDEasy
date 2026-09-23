@@ -28,6 +28,7 @@ import com.devonfw.tools.ide.url.tool.eclipse.EclipseJeeUrlUpdater;
 import com.devonfw.tools.ide.url.tool.gcloganalyzer.GcLogAnalyzerUrlUpdater;
 import com.devonfw.tools.ide.url.tool.gcloud.GCloudUrlUpdater;
 import com.devonfw.tools.ide.url.tool.gcviewer.GcViewerUrlUpdater;
+import com.devonfw.tools.ide.url.tool.gemini.GeminiUrlUpdater;
 import com.devonfw.tools.ide.url.tool.gh.GhUrlUpdater;
 import com.devonfw.tools.ide.url.tool.go.GoUrlUpdater;
 import com.devonfw.tools.ide.url.tool.graalvm.GraalVmCommunityUpdater;
@@ -85,7 +86,8 @@ public class UpdateManager extends AbstractProcessorWithTimeout {
   private final Map<UrlVersion, UrlStatusFile> statusFiles = new HashMap<>();
 
   private final List<AbstractUrlUpdater> updaters = List.of(
-      new AndroidStudioUrlUpdater(), new AwsUrlUpdater(), new AzureUrlUpdater(), new ClaudeUrlUpdater(), new CopilotUrlUpdater(), new CorepackUrlUpdater(),
+      new GeminiUrlUpdater(), new AndroidStudioUrlUpdater(), new AwsUrlUpdater(), new AzureUrlUpdater(), new ClaudeUrlUpdater(), new CopilotUrlUpdater(),
+      new CorepackUrlUpdater(),
       new DockerDesktopUrlUpdater(), new DotNetUrlUpdater(), new EclipseCppUrlUpdater(), new EclipseJeeUrlUpdater(), new EclipseJavaUrlUpdater(),
       new GcLogAnalyzerUrlUpdater(), new GCloudUrlUpdater(), new GcViewerUrlUpdater(), new GhUrlUpdater(), new GoUrlUpdater(), new GraalVmCommunityUpdater(),
       new GraalVmOracleUrlUpdater(), new GradleUrlUpdater(), new HelmUrlUpdater(), new InsoUrlUpdater(), new IntellijUrlUpdater(), new JasyptUrlUpdater(),
@@ -203,7 +205,8 @@ public class UpdateManager extends AbstractProcessorWithTimeout {
 
   /**
    * @param urlVersion the {@link UrlVersion} to get the {@link UrlStatusFile} for.
-   * @param create {@code true} to create the {@link UrlStatusFile} if the {@code status.json} does not exist yet, {@code false} to return {@code null} instead.
+   * @param create {@code true} to create the {@link UrlStatusFile} if the {@code status.json} does not exist yet, {@code false} to return {@code null}
+   *     instead.
    * @return the cached {@link UrlStatusFile} for the given {@link UrlVersion} or {@code null}.
    */
   public UrlStatusFile getStatusFile(UrlVersion urlVersion, boolean create) {
