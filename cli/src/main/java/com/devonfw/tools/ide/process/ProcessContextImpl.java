@@ -1,6 +1,7 @@
 package com.devonfw.tools.ide.process;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -315,6 +316,12 @@ public class ProcessContextImpl implements ProcessContext {
     sb.append("Running command '");
     sb.append(this.executable);
     sb.append("'");
+    File directory = this.processBuilder.directory();
+    if (directory != null) {
+      sb.append(" in '");
+      sb.append(directory);
+      sb.append("'");
+    }
     if (interpreter != null) {
       sb.append(" using ");
       sb.append(interpreter);
