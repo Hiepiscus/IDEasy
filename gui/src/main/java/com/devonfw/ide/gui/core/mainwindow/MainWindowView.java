@@ -77,6 +77,9 @@ public class MainWindowView extends BorderPane {
   private ToggleButton consolePaneToggleButton;
 
   @FXML
+  private Button commandletTabButton;
+
+  @FXML
   private AnchorPane console;
 
   @FXML
@@ -137,6 +140,7 @@ public class MainWindowView extends BorderPane {
     bindWelcomePane();
     bindConsole();
     bindStatusBar();
+    bindCommandletTabButton();
 
   }
 
@@ -195,6 +199,10 @@ public class MainWindowView extends BorderPane {
       this.centerSplitPane.setDividerPosition(0, CONSOLE_HIDDEN_DIVIDER_POSITION);
       LOG.debug("Console hidden");
     }
+  }
+
+  private void bindCommandletTabButton() {
+    this.commandletTabButton.setOnAction(_ -> this.viewModel.openCommandletTab());
   }
 
   private void bindStatusBar() {

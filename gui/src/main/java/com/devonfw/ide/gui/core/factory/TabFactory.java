@@ -7,6 +7,7 @@ import javafx.scene.control.TabPane;
 import com.devonfw.ide.gui.core.context.GuiStateManager;
 import com.devonfw.ide.gui.core.service.CommandletService;
 import com.devonfw.ide.gui.core.tab.TabComponent;
+import com.devonfw.ide.gui.feature.commandlet.CommandletTab;
 import com.devonfw.ide.gui.feature.ide.launcher.IdeLauncherTab;
 import com.devonfw.ide.gui.feature.tool.config.ToolConfigTab;
 
@@ -57,6 +58,13 @@ public class TabFactory {
    */
   public void openToolConfigTab() {
     open(new ToolConfigTab(this.guiStateManager));
+  }
+
+  /**
+   * Opens (or focuses) the commandlet tab.
+   */
+  public void openCommandletTab() {
+    open(new CommandletTab(guiStateManager));
   }
 
   private void open(TabComponent tabComponent) {

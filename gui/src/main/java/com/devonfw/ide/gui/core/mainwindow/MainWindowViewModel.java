@@ -176,4 +176,9 @@ public class MainWindowViewModel {
     return this.workspaceSelected;
   }
 
+  public void openCommandletTab() {
+
+    this.tabFactory.openCommandletTab();
+  }
+
 }
