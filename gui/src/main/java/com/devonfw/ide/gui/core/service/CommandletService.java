@@ -2,7 +2,6 @@ package com.devonfw.ide.gui.core.service;
 
 import java.nio.file.Path;
 import java.util.Objects;
-
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert.AlertType;
@@ -65,13 +64,13 @@ public class CommandletService {
   /**
    * Runs the given commandlet in the currently selected project/workspace context.
    *
-   * @param commandlet the commandlet to run.
+   * @param args the commandlet to run.
    */
-  public void runCommandlet(String commandlet) {
+  public void runCommandlet(String... args) {
 
     this.preLaunchAction.run();
 
-    Task<Void> commandletTask = runCommandletTask(commandlet);
+    Task<Void> commandletTask = runCommandletTask(args);
 
     this.guiLogListener = new IdeGuiLogListener(guiStateManager.getEventBus());
     this.guiOutputListener = new GuiOutputListener(guiStateManager.getEventBus());
@@ -81,7 +80,8 @@ public class CommandletService {
     commandletThread.start();
   }
 
-  private Task<Void> runCommandletTask(String commandlet) {
+  private Task<Void> runCommandletTask(String... args) {
+    final String commandlet = args.length > 0 ? args[0] : "";
 
     try (ProgressBarTask task = (ProgressBarTask) this.guiStateManager.getCurrentContext()
         .newProgressBarIndeterminate("Starting " + commandlet)) {
@@ -118,5 +118,4 @@ public class CommandletService {
       return commandletTask;
     }
   }
-
 }
