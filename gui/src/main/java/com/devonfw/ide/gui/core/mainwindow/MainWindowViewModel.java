@@ -165,4 +165,9 @@ public class MainWindowViewModel {
     this.tabFactory.openLauncherTab();
   }
 
+  public void openCommandletTab() {
+
+    this.tabFactory.openCommandletTab();
+  }
+
 }

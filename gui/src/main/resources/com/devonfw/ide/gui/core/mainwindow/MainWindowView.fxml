@@ -37,6 +37,8 @@
             </graphic>
           </ToggleButton>
 
+          <Button fx:id="commandletTabButton" text="%tab.commandlet"/>
+
           <Region HBox.hgrow="ALWAYS"/>
           <padding>
             <Insets right="8.0" left="8.0" top="8.0" bottom="8.0"/>

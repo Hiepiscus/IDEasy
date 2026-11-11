@@ -6,6 +6,7 @@ import java.util.Objects;
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.SplitPane;
@@ -63,6 +64,9 @@ public class MainWindowView extends BorderPane {
 
   @FXML
   private ToggleButton consolePaneToggleButton;
+
+  @FXML
+  private Button commandletTabButton;
 
   @FXML
   private AnchorPane console;
@@ -124,6 +128,7 @@ public class MainWindowView extends BorderPane {
 
     bindConsole();
     bindStatusBar();
+    bindCommandletTabButton();
 
     this.viewModel.openLauncherTab();
   }
@@ -166,6 +171,10 @@ public class MainWindowView extends BorderPane {
       this.centerSplitPane.setDividerPosition(0, CONSOLE_HIDDEN_DIVIDER_POSITION);
       LOG.debug("Console hidden");
     }
+  }
+
+  private void bindCommandletTabButton() {
+    this.commandletTabButton.setOnAction(_ -> this.viewModel.openCommandletTab());
   }
 
   private void bindStatusBar() {
