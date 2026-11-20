@@ -102,3 +102,13 @@
   -fx-max-width: 18;
   -fx-max-height: 15;
 }
+
+.welcomeCommandletIcon {
+
+  -fx-shape: "M4 2 L16 9 L4 16 Z";
+  -fx-background-color: #4A4458;
+  -fx-min-width: 18;
+  -fx-min-height: 15;
+  -fx-max-width: 18;
+  -fx-max-height: 15;
+}

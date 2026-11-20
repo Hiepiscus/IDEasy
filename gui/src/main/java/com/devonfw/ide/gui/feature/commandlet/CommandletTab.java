@@ -29,15 +29,24 @@ public class CommandletTab extends TabComponent<CommandletViewModel> {
     this.view = new CommandletView(this.viewModel, this.nlsService);
     this.tab = new Tab(this.nlsService.get(tabTitleKey), this.view);
     this.tab.setUserData(tabTitleKey);
-    this.tab.setClosable(false);
+    this.tab.setOnClosed(_ -> this.viewModel.dispose());
 
     return this.view;
   }
 
   @Override
   public TabChangeEvent createTabChangeEvent() {
-    createTab();
+    if (this.tab == null) {
+      createTab();
+    }
     return new TabChangeEvent(this.tab);
+  }
+
+  /**
+   * @return {@code true} if the tab has been created and is currently shown in the main window, {@code false} otherwise.
+   */
+  public boolean isOpen() {
+    return this.tab != null && this.tab.getTabPane() != null;
   }
 
   @Override
