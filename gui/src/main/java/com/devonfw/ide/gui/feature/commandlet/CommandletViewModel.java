@@ -14,8 +14,7 @@ import com.devonfw.ide.gui.core.tab.TabViewModel;
 import com.devonfw.tools.ide.commandlet.AbstractCommandlet;
 
 /**
- * View model of the commandlet tab. It exposes the state that drives the tab: the list of available commandlets, the selected commandlet, the raw parameters
- * entered by the user, and the enabled state of the execute button (which stays disabled until a project/workspace is selected).
+ * View model of the commandlet tab. It exposes the available commandlets, the selected commandlet, the entered parameters and the execute button state.
  */
 public class CommandletViewModel extends TabViewModel {
 
@@ -29,8 +28,10 @@ public class CommandletViewModel extends TabViewModel {
 
   private final BooleanProperty isExecuteButtonDisabled = new SimpleBooleanProperty();
 
+  private final GuiContextChangeListener contextChangeListener = _ -> load();
+
   /**
-   * Creates the view model.
+   * Creates the view model and loads the commandlets of the currently selected project.
    *
    * @param guiStateManager the app-wide selection and context holder.
    */
@@ -40,38 +41,35 @@ public class CommandletViewModel extends TabViewModel {
 
     // The execute button stays disabled until a project/workspace is selected, mirroring the IDE launcher.
     this.isExecuteButtonDisabled.bind(this.guiStateManager.workspaceSelectedProperty().not());
+    this.guiStateManager.addGuiContextChangeListener(this.contextChangeListener);
+    load();
+  }
 
-    initializeCommandletList();
+  /**
+   * Loads the commandlets of the currently selected project. If no workspace is selected yet, the list is cleared and filled again once a workspace becomes
+   * available (via the context-change listener).
+   */
+  public void load() {
+    IdeGuiContext context = this.guiStateManager.getCurrentContext();
+    this.commandletViewModel.getItems().clear();
+    if (context == null) {
+      return;
+    }
+    for (AbstractCommandlet commandlet : context.getCommandletManager().getCommandlets()) {
+      this.commandletViewModel.getItems().add(commandlet.getName());
+    }
+  }
+
+  /**
+   * Releases the resources of this view model, i.e. removes the context-change listener that reloads the commandlet list. Called when the tab is closed.
+   */
+  public void dispose() {
+    this.guiStateManager.removeGuiContextChangeListener(this.contextChangeListener);
   }
 
   @Override
   public String getTabTitleKey() {
     return TAB_TITLE_KEY;
-  }
-
-  /**
-   * Populates the commandlet combo box. If no context is available yet (no workspace selected), it registers a self-removing listener so the list is filled the
-   * first time a context becomes available.
-   */
-  private void initializeCommandletList() {
-    IdeGuiContext context = this.guiStateManager.getCurrentContext();
-    if (context != null) {
-      populateCommandlets(context);
-      return;
-    }
-    final GuiContextChangeListener[] listenerHolder = new GuiContextChangeListener[1];
-    listenerHolder[0] = newContext -> {
-      populateCommandlets(newContext);
-      this.guiStateManager.removeGuiContextChangeListener(listenerHolder[0]);
-    };
-    this.guiStateManager.addGuiContextChangeListener(listenerHolder[0]);
-  }
-
-  private void populateCommandlets(IdeGuiContext context) {
-    this.commandletViewModel.getItems().clear();
-    for (AbstractCommandlet commandlet : context.getCommandletManager().getCommandlets()) {
-      this.commandletViewModel.getItems().add(commandlet.getName());
-    }
   }
 
   public ComboBoxViewModel<String> getCommandletViewModel() {

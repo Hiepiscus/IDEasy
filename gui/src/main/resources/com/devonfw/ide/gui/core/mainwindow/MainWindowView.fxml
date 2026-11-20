@@ -51,6 +51,13 @@
                     <Region styleClass="welcomeToolConfigIcon"/>
                   </graphic>
                 </Button>
+                <Button fx:id="openCommandletButton"
+                  text="%welcome_open_commandlet"
+                  styleClass="welcomeButton">
+                  <graphic>
+                    <Region styleClass="welcomeCommandletIcon"/>
+                  </graphic>
+                </Button>
               </VBox>
             </StackPane>
             <TabPane fx:id="tabPane" tabClosingPolicy="ALL_TABS">
@@ -79,8 +86,6 @@
               </ImageView>
             </graphic>
           </ToggleButton>
-
-          <Button fx:id="commandletTabButton" text="%tab.commandlet"/>
 
           <Region HBox.hgrow="ALWAYS"/>
           <padding>

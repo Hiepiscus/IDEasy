@@ -2,7 +2,6 @@ package com.devonfw.ide.gui.core.mainwindow;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
@@ -77,7 +76,7 @@ public class MainWindowView extends BorderPane {
   private ToggleButton consolePaneToggleButton;
 
   @FXML
-  private Button commandletTabButton;
+  private Button openCommandletButton;
 
   @FXML
   private AnchorPane console;
@@ -140,7 +139,6 @@ public class MainWindowView extends BorderPane {
     bindWelcomePane();
     bindConsole();
     bindStatusBar();
-    bindCommandletTabButton();
 
   }
 
@@ -167,6 +165,10 @@ public class MainWindowView extends BorderPane {
     // the tool configuration belongs to a project, so it can only be opened once a workspace is selected
     this.openToolConfigButton.disableProperty().bind(this.viewModel.workspaceSelectedProperty().not());
     this.openToolConfigButton.setOnAction(_ -> this.viewModel.openToolConfigTab());
+
+    // the commandlet tabs belongs to a project, so it can only be opened once a workspace is selected
+    this.openCommandletButton.disableProperty().bind(this.viewModel.workspaceSelectedProperty().not());
+    this.openCommandletButton.setOnAction(_ -> this.viewModel.openCommandletTab());
   }
 
   private void bindConsole() {
@@ -199,10 +201,6 @@ public class MainWindowView extends BorderPane {
       this.centerSplitPane.setDividerPosition(0, CONSOLE_HIDDEN_DIVIDER_POSITION);
       LOG.debug("Console hidden");
     }
-  }
-
-  private void bindCommandletTabButton() {
-    this.commandletTabButton.setOnAction(_ -> this.viewModel.openCommandletTab());
   }
 
   private void bindStatusBar() {
