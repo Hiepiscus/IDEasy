@@ -1,17 +1,22 @@
 package com.devonfw.ide.gui.feature.commandlet;
 
+import java.util.ArrayList;
+import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import com.devonfw.ide.gui.core.context.GuiContextChangeListener;
 import com.devonfw.ide.gui.core.context.GuiStateManager;
 import com.devonfw.ide.gui.core.context.IdeGuiContext;
-import com.devonfw.ide.gui.core.helper.combobox.ComboBoxViewModel;
 import com.devonfw.ide.gui.core.service.CommandletService;
 import com.devonfw.ide.gui.core.tab.TabViewModel;
 import com.devonfw.tools.ide.commandlet.AbstractCommandlet;
+import com.devonfw.tools.ide.property.KeywordProperty;
+import com.devonfw.tools.ide.property.Property;
 
 /**
  * View model of the commandlet tab. It exposes the available commandlets, the selected commandlet, the entered parameters and the execute button state.
@@ -22,13 +27,19 @@ public class CommandletViewModel extends TabViewModel {
 
   private final CommandletService commandletService;
 
-  private final ComboBoxViewModel<String> commandletViewModel = new ComboBoxViewModel<>();
+  private final List<String> allCommandlets = new ArrayList<>();
 
-  private final StringProperty parameters = new SimpleStringProperty();
+  private final StringProperty query = new SimpleStringProperty();
+
+  private final ObservableList<ParameterFieldModel> parameters = FXCollections.observableArrayList();
+
+  private String loadedCommandlet;
 
   private final BooleanProperty isExecuteButtonDisabled = new SimpleBooleanProperty();
 
   private final GuiContextChangeListener contextChangeListener = _ -> load();
+
+  private final ObservableList<String> suggestions = FXCollections.observableArrayList();
 
   /**
    * Creates the view model and loads the commandlets of the currently selected project.
@@ -51,13 +62,61 @@ public class CommandletViewModel extends TabViewModel {
    */
   public void load() {
     IdeGuiContext context = this.guiStateManager.getCurrentContext();
-    this.commandletViewModel.getItems().clear();
+    this.allCommandlets.clear();
     if (context == null) {
+      this.parameters.clear();
       return;
     }
     for (AbstractCommandlet commandlet : context.getCommandletManager().getCommandlets()) {
-      this.commandletViewModel.getItems().add(commandlet.getName());
+      this.allCommandlets.add(commandlet.getName());
     }
+    updateSuggestions(this.query.get());
+    loadPropertiesForm(this.query.get());
+  }
+
+  private void loadPropertiesForm(String commandlet) {
+    commandlet = (commandlet == null) ? "" : commandlet.trim();
+    if (commandlet == null || commandlet.equals(this.loadedCommandlet)) {
+      return;
+    }
+    this.loadedCommandlet = commandlet;
+    this.parameters.clear();
+    IdeGuiContext context = this.guiStateManager.getCurrentContext();
+    AbstractCommandlet commandletObj = (context != null) ? context.getCommandletManager().getCommandlet(commandlet) : null;
+    if (commandletObj == null) {
+      return;
+    }
+    for (Property<?> property : commandletObj.getProperties()) {
+      if (property instanceof KeywordProperty) {
+        continue;
+      }
+      ParameterFieldModel field = new ParameterFieldModel(property);
+      if (field.isCheckbox()) {
+        field.valueProperty().set(String.valueOf(((com.devonfw.tools.ide.property.BooleanProperty) property).isTrue()));
+      } else if (property.getValueAsString() != null) {
+        field.valueProperty().set(property.getValueAsString());
+      }
+      this.parameters.add(field);
+    }
+  }
+
+  void updateSuggestions(String text) {
+    this.suggestions.setAll(filter(text));
+  }
+
+  private List<String> filter(String text) {
+    if (text == null || text.isBlank()) {
+      return this.allCommandlets;
+    }
+
+    String needle = text.trim().toLowerCase();
+    List<String> matches = new ArrayList<>();
+    for (String commandlet : this.allCommandlets) {
+      if (commandlet.toLowerCase().contains(needle)) {
+        matches.add(commandlet);
+      }
+    }
+    return matches;
   }
 
   /**
@@ -72,14 +131,6 @@ public class CommandletViewModel extends TabViewModel {
     return TAB_TITLE_KEY;
   }
 
-  public ComboBoxViewModel<String> getCommandletViewModel() {
-    return this.commandletViewModel;
-  }
-
-  public StringProperty parametersProperty() {
-    return this.parameters;
-  }
-
   public BooleanProperty isExecuteButtonDisabledProperty() {
     return this.isExecuteButtonDisabled;
   }
@@ -88,29 +139,64 @@ public class CommandletViewModel extends TabViewModel {
    * Builds the argument array for the CLI from the selected commandlet and the user's space-separated parameters.
    *
    * @param commandlet the selected commandlet name.
-   * @param parameters the raw, space-separated parameters entered by the user (may be blank).
    * @return the command-line arguments (commandlet name followed by the individual parameters).
    */
-  public String[] buildArguments(String commandlet, String parameters) {
-    if (parameters == null || parameters.isBlank()) {
-      return new String[] { commandlet };
+  public String[] buildArguments(String commandlet) {
+    List<String> options = new ArrayList<>();
+    List<String> values = new ArrayList<>();
+    for (ParameterFieldModel field : this.parameters) {
+      Property<?> property = field.getProperty();
+      String fieldValue = field.valueProperty().get();
+
+      if (property.isOption()) {
+        if (field.isCheckbox()) {
+          if (Boolean.parseBoolean(fieldValue)) {
+            options.add(property.getName());
+          }
+        } else if (!isBlank(fieldValue)) {
+          options.add(property.getName());
+          options.add(fieldValue);
+        }
+      } else if (!isBlank(fieldValue)) {
+        values.add(fieldValue);
+      }
     }
-    String[] parts = parameters.trim().split("\\s+");
-    String[] arguments = new String[parts.length + 1];
-    arguments[0] = commandlet;
-    System.arraycopy(parts, 0, arguments, 1, parts.length);
-    return arguments;
+    List<String> arguments = new ArrayList<>();
+    arguments.add(commandlet);
+    arguments.addAll(options);
+    arguments.addAll(values);
+    return arguments.toArray(new String[0]);
   }
 
   /**
    * Executes the selected commandlet with the entered parameters in the currently selected project/workspace context.
    */
   public void execute() {
-    String commandlet = this.commandletViewModel.getSelectedItem().orElse(null);
-    if (commandlet == null) {
+    String commandlet = this.query.get().trim();
+    if (commandlet.isEmpty()) {
       return;
     }
-    this.commandletService.runCommandlet(buildArguments(commandlet, this.parameters.get()));
+    this.commandletService.runCommandlet(buildArguments(commandlet));
   }
 
+  private static boolean isBlank(String text) {
+    return (text == null) || text.isBlank();
+  }
+
+  public ObservableList<String> getSuggestions() {
+    return this.suggestions;
+  }
+
+  public void selectSuggestion(String commandlet) {
+    this.query.set(commandlet);
+    loadPropertiesForm(commandlet);
+  }
+
+  public ObservableList<ParameterFieldModel> getParameters() {
+    return this.parameters;
+  }
+  
+  public StringProperty queryProperty() {
+    return this.query;
+  }
 }

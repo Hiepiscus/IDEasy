@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.VBox?>
 <fx:root fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" type="ScrollPane" xmlns="http://javafx.com/javafx/25.0.0"
   xmlns:fx="http://javafx.com/fxml/1">
   <VBox maxWidth="1.7976931348623157E308"
@@ -13,15 +13,11 @@
     </padding>
 
     <Label text="%commandlet.label"/>
-    <ComboBox fx:id="commandlet"
-      maxWidth="1.7976931348623157E308"
-      promptText="%commandlet.choose"/>
+    <TextField fx:id="commandlet" maxWidth="Infinity" promptText="%commandlet.search"/>
+    <ListView fx:id="suggestions" maxWidth="Infinity" prefHeight="150.0"/>
 
     <Label text="%commandlet.parameters"/>
-    <TextField fx:id="parameters"
-      maxWidth="1.7976931348623157E308"
-      promptText="%commandlet.parameters_hint"/>
-
+    <ListView fx:id="parameters" maxWidth="Infinity" prefHeight="150.0"/>
     <Button fx:id="execute" defaultButton="true" text="%commandlet.execute"/>
   </VBox>
 </fx:root>
