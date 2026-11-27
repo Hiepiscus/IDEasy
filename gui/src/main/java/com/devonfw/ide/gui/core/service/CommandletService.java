@@ -16,8 +16,11 @@ import com.devonfw.ide.gui.core.context.IdeGuiLogListener;
 import com.devonfw.ide.gui.core.event.GuiEventBus;
 import com.devonfw.ide.gui.core.modal.IdeDialog;
 import com.devonfw.ide.gui.core.progress.ProgressBarTask;
+import com.devonfw.tools.ide.cli.CliArguments;
+import com.devonfw.tools.ide.commandlet.AbstractCommandlet;
 import com.devonfw.tools.ide.context.IdeStartContextImpl;
 import com.devonfw.tools.ide.log.IdeLogLevel;
+import com.devonfw.tools.ide.validation.ValidationResult;
 
 /**
  * Service to run a commandlet in the currently selected project/workspace context.
@@ -70,7 +73,7 @@ public class CommandletService {
 
     this.preLaunchAction.run();
 
-    Task<Void> commandletTask = runCommandletTask(args);
+    Task<Void> commandletTask = (args.length > 1) ? runCommandletTask(args[0], args) : runCommandletTask(args);
 
     this.guiLogListener = new IdeGuiLogListener(guiStateManager.getEventBus());
     this.guiOutputListener = new GuiOutputListener(guiStateManager.getEventBus());
@@ -105,6 +108,59 @@ public class CommandletService {
             guiLogListener.flushAndEndBuffering();
             LOG.error("Failed to run commandlet {}: {}", commandlet, e.getMessage(), e);
 
+          }
+          return null;
+        }
+      };
+
+      commandletTask.setOnFailed(_ -> Platform.runLater(() -> {
+        task.close();
+        new IdeDialog(AlertType.ERROR, "Error occurred while launching " + commandlet).showAndWait();
+      }));
+      commandletTask.setOnSucceeded(_ -> Platform.runLater(task::close));
+      return commandletTask;
+    }
+  }
+
+  private Task<Void> runCommandletTask(String commandlet, String[] args) {
+
+    try (ProgressBarTask task = (ProgressBarTask) this.guiStateManager.getCurrentContext()
+        .newProgressBarIndeterminate("Starting " + commandlet)) {
+      Task<Void> commandletTask = new Task<>() {
+        @Override
+        protected Void call() {
+
+          try {
+            IdeStartContextImpl startContext = new IdeStartContextImpl(IdeLogLevel.INFO, guiLogListener);
+            Path workspacePath = guiStateManager.getCurrentContext().getWorkspacePath();
+            IdeGuiContext context = new IdeGuiContext(startContext, workspacePath, CommandletService.this.guiStateManager.getTaskManager());
+            context.setOutputListener(guiOutputListener);
+            LOG.info("Running commandlet {}", commandlet);
+
+            AbstractCommandlet cmd = context.getCommandletManager().getCommandlet(commandlet);
+            if (cmd == null) {
+              LOG.error("Unknown commandlet: {}", commandlet);
+              return null;
+            }
+            CliArguments cliArguments = new CliArguments(args);
+            if (cliArguments.current().isStart()) {
+              cliArguments.next();
+            }
+            ValidationResult applyResult = context.apply(cliArguments, cmd);
+            if (!applyResult.isValid()) {
+              LOG.error(applyResult.getErrorMessage());
+              return null;
+            }
+            ValidationResult result = cmd.validate();
+            if (!result.isValid()) {
+              LOG.error(result.getErrorMessage());
+              return null;
+            }
+            cmd.run();
+            LOG.info("Commandlet {} completed successfully.", commandlet);
+          } catch (Exception e) {
+            guiLogListener.flushAndEndBuffering();
+            LOG.error("Failed to run commandlet {}: {}", commandlet, e.getMessage(), e);
           }
           return null;
         }

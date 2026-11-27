@@ -1,15 +1,21 @@
 package com.devonfw.ide.gui.feature.commandlet;
 
+import java.io.File;
 import javafx.beans.binding.Bindings;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
 import com.devonfw.ide.gui.core.service.NlsService;
 import com.devonfw.ide.gui.core.tab.TabView;
@@ -26,12 +32,14 @@ public class CommandletView extends TabView {
   private ListView<String> suggestions;
 
   @FXML
-  private ListView<ParameterFieldModel> parameters;
+  private VBox parameters;
 
   @FXML
   private Button execute;
 
   private final CommandletViewModel viewModel;
+
+  private final NlsService nlsService;
 
   /**
    * Creates the commandlet view and loads its FXML.
@@ -41,6 +49,7 @@ public class CommandletView extends TabView {
    */
   public CommandletView(CommandletViewModel viewModel, NlsService nlsService) {
     this.viewModel = viewModel;
+    this.nlsService = nlsService;
     loadFxml("Commandlet.fxml", nlsService);
   }
 
@@ -80,57 +89,97 @@ public class CommandletView extends TabView {
       }
     });
 
-    this.parameters.setItems(this.viewModel.getParameters());
-    this.parameters.disableProperty().bind(this.viewModel.isExecuteButtonDisabledProperty());
-    this.parameters.setCellFactory(view -> new ParameterCell());
+    this.parameters.disableProperty().bind(viewModel.isExecuteButtonDisabledProperty());
+    this.viewModel.getParameters().addListener((ListChangeListener<ParameterFieldModel>) _ -> rebuildParameterForm());
+    rebuildParameterForm();
 
     this.execute.disableProperty().bind(viewModel.isExecuteButtonDisabledProperty());
     this.execute.setOnAction(_ -> this.viewModel.execute());
   }
 
+  private void rebuildParameterForm() {
+    this.parameters.getChildren().clear();
+    for (ParameterFieldModel field : this.viewModel.getParameters()) {
+      this.parameters.getChildren().add(createParameterRow(field));
+    }
+  }
+
+  private Region createParameterRow(ParameterFieldModel field) {
+    Label label = new Label(field.getDisplayName());
+    label.setMinWidth(200);
+    label.setMaxWidth(200);
+    label.setStyle("-fx-text-align: right; -fx-padding: 0 8 0 0;");
+    if (field.getType() == ParameterFieldModel.FieldType.CHECKBOX) {
+      CheckBox checkBox = new CheckBox();
+      checkBox.setSelected(Boolean.parseBoolean(field.valueProperty().get()));
+      checkBox.selectedProperty().addListener((_, _, selected) -> field.valueProperty().set(String.valueOf(selected)));
+      return new HBox(5, label, checkBox);
+    }
+    TextField textField = new TextField();
+    textField.setMaxWidth(Double.MAX_VALUE);
+    textField.textProperty().bindBidirectional(field.valueProperty());
+    if (field.getType() == ParameterFieldModel.FieldType.FILE || field.getType() == ParameterFieldModel.FieldType.FOLDER) {
+      Button browseButton = new Button("...");
+      browseButton.setMaxWidth(Region.USE_PREF_SIZE);
+      browseButton.setOnAction(_ -> browse(field, textField));
+      return new HBox(5, label, textField, browseButton);
+    }
+    return new HBox(5, label, textField);
+  }
+
   /**
-   * Renders one parameter form field: a text field or checkbox bound to the value of the {@link ParameterFieldModel}.
+   * Opens a file or directory chooser (depending on the field type) and writes the picked path back to the field.
    */
-  private class ParameterCell extends ListCell<ParameterFieldModel> {
+  private void browse(ParameterFieldModel field, TextField textField) {
+    Stage stage = (this.getScene() != null) ? (Stage) this.getScene().getWindow() : null;
+    String current = textField.getText();
+    boolean folder = field.getType() == ParameterFieldModel.FieldType.FOLDER;
+    String selected = folder ? selectDirectory(stage, current) : selectFile(stage, current);
+    if (selected != null) {
+      field.valueProperty().set(selected);
+    }
+  }
 
-    private final Label label = new Label();
+  private String selectDirectory(Stage stage, String current) {
+    DirectoryChooser directoryChooser = new DirectoryChooser();
+    directoryChooser.setTitle(this.nlsService.get("commandlet.choose_folder"));
+    File initialDir = initialDirectoryOf(current, true);
+    if (initialDir != null) {
+      directoryChooser.setInitialDirectory(initialDir);
+    }
+    File result = directoryChooser.showDialog(stage);
+    return (result != null) ? result.getAbsolutePath() : null;
+  }
 
-    private final TextField textField = new TextField();
+  private String selectFile(Stage stage, String current) {
+    FileChooser fileChooser = new FileChooser();
+    fileChooser.setTitle(this.nlsService.get("commandlet.choose_file"));
+    File initialDir = initialDirectoryOf(current, false);
 
-    private final CheckBox checkBox = new CheckBox();
+    if (initialDir != null) {
+      fileChooser.setInitialDirectory(initialDir);
+    }
+    File result = fileChooser.showOpenDialog(stage);
+    return (result != null) ? result.getAbsolutePath() : null;
+  }
 
-    /** The field currently rendered by this (recycled) cell; the checkbox listener writes to this. */
-    private ParameterFieldModel field;
-
-    ParameterCell() {
-      this.label.setMinWidth(200);
-      this.label.setMaxWidth(200);
-      this.label.setStyle("-fx-text-align: right; -fx-padding: 0 8 0 0;");
-      this.checkBox.selectedProperty().addListener((_, _, selected) -> {
-        if (this.field != null) {
-          this.field.valueProperty().set(String.valueOf(selected));
+  private File initialDirectoryOf(String current, boolean folder) {
+    if (current != null && !current.isBlank()) {
+      File currentPath = new File(current);
+      if (folder) {
+        if (currentPath.isDirectory()) {
+          return currentPath;
         }
-      });
-    }
+      } else if (currentPath.isFile() && currentPath.getParentFile() != null) {
+        return currentPath.getParentFile();
+      }
 
-    @Override
-    protected void updateItem(ParameterFieldModel item, boolean empty) {
-      super.updateItem(item, empty);
-      this.field = empty ? null : item;
-      if (empty || (item == null)) {
-        setGraphic(null);
-        return;
-      }
-      this.label.setText(item.getDisplayName());
-      if (item.isCheckbox()) {
-        this.checkBox.setSelected(Boolean.parseBoolean(item.valueProperty().get()));
-        setGraphic(new HBox(5, this.label, this.checkBox));
-      } else {
-        this.textField.textProperty().bindBidirectional(item.valueProperty());
-        this.textField.setMaxWidth(Double.MAX_VALUE);
-        setGraphic(new HBox(5, this.label, this.textField));
+      File cwdFile = this.viewModel.getWorkingDirectory().toFile();
+      if (cwdFile.isDirectory()) {
+        return cwdFile;
       }
     }
+    return null;
   }
 }
 

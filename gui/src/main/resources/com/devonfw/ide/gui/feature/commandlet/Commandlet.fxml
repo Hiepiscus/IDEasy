@@ -17,7 +17,7 @@
     <ListView fx:id="suggestions" maxWidth="Infinity" prefHeight="150.0"/>
 
     <Label text="%commandlet.parameters"/>
-    <ListView fx:id="parameters" maxWidth="Infinity" prefHeight="150.0"/>
+    <VBox fx:id="parameters" spacing="5.0" maxWidth="Infinity"/>
     <Button fx:id="execute" defaultButton="true" text="%commandlet.execute"/>
   </VBox>
 </fx:root>

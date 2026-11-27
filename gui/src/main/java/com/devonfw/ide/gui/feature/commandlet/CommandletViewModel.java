@@ -1,5 +1,6 @@
 package com.devonfw.ide.gui.feature.commandlet;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.beans.property.BooleanProperty;
@@ -91,7 +92,7 @@ public class CommandletViewModel extends TabViewModel {
         continue;
       }
       ParameterFieldModel field = new ParameterFieldModel(property);
-      if (field.isCheckbox()) {
+      if (field.getType() == ParameterFieldModel.FieldType.CHECKBOX) {
         field.valueProperty().set(String.valueOf(((com.devonfw.tools.ide.property.BooleanProperty) property).isTrue()));
       } else if (property.getValueAsString() != null) {
         field.valueProperty().set(property.getValueAsString());
@@ -142,29 +143,11 @@ public class CommandletViewModel extends TabViewModel {
    * @return the command-line arguments (commandlet name followed by the individual parameters).
    */
   public String[] buildArguments(String commandlet) {
-    List<String> options = new ArrayList<>();
-    List<String> values = new ArrayList<>();
-    for (ParameterFieldModel field : this.parameters) {
-      Property<?> property = field.getProperty();
-      String fieldValue = field.valueProperty().get();
-
-      if (property.isOption()) {
-        if (field.isCheckbox()) {
-          if (Boolean.parseBoolean(fieldValue)) {
-            options.add(property.getName());
-          }
-        } else if (!isBlank(fieldValue)) {
-          options.add(property.getName());
-          options.add(fieldValue);
-        }
-      } else if (!isBlank(fieldValue)) {
-        values.add(fieldValue);
-      }
-    }
     List<String> arguments = new ArrayList<>();
     arguments.add(commandlet);
-    arguments.addAll(options);
-    arguments.addAll(values);
+    for (ParameterFieldModel field : this.parameters) {
+      arguments.addAll(field.toCliArguments());
+    }
     return arguments.toArray(new String[0]);
   }
 
@@ -195,8 +178,13 @@ public class CommandletViewModel extends TabViewModel {
   public ObservableList<ParameterFieldModel> getParameters() {
     return this.parameters;
   }
-  
+
   public StringProperty queryProperty() {
     return this.query;
+  }
+
+  public Path getWorkingDirectory() {
+    IdeGuiContext context = this.guiStateManager.getCurrentContext();
+    return (context != null) ? context.getCwd() : null;
   }
 }
